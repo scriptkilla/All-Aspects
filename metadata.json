@@ -1,0 +1,7 @@
+{
+  "name": "All Aspects Inventory",
+  "description": "Inventory and equipment tracking for All Aspects General Contracting.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
