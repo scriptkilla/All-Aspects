@@ -269,7 +269,8 @@ export default function App() {
   const handleScanResult = (result: string) => {
     setIsScannerOpen(false);
     
-    const existingItem = inventory.find(i => i.barcode === result);
+    // Search by barcode OR internal ID (useful for QR codes generated from the app)
+    const existingItem = inventory.find(i => i.barcode === result || i.id === result);
     
     if (existingItem) {
       // Item found: Open edit modal directly

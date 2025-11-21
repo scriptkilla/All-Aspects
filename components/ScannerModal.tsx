@@ -1,5 +1,6 @@
+
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle } from 'lucide-react';
+import { X, Camera, AlertCircle, QrCode } from 'lucide-react';
 
 // Declare global variable for the external library loaded in index.html
 declare const Html5Qrcode: any;
@@ -52,7 +53,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
 
       const config = {
         fps: 10,
-        qrbox: { width: 250, height: 150 }, // Rectangular scanning zone for barcodes
+        qrbox: { width: 250, height: 250 }, // Square scanning zone to support both QR and Barcodes
         aspectRatio: 1.0,
         experimentalFeatures: {
             useBarCodeDetectorIfSupported: true
@@ -113,7 +114,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
           <h3 className="text-white font-medium flex items-center gap-2">
             <Camera size={20} className="text-brand-accent" />
-            Scan Barcode
+            Scan Code
           </h3>
           <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all">
             <X size={20} />
@@ -140,8 +141,8 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
             <>
               {/* Visual Overlay (Scan Frame) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                 {/* Target Box */}
-                 <div className="w-[70%] h-[35%] relative">
+                 {/* Target Box - Square for QR codes */}
+                 <div className="w-64 h-64 relative">
                     {/* Corners */}
                     <div className="absolute top-0 left-0 w-6 h-6 border-t-[3px] border-l-[3px] border-brand-accent rounded-tl-md shadow-sm"></div>
                     <div className="absolute top-0 right-0 w-6 h-6 border-t-[3px] border-r-[3px] border-brand-accent rounded-tr-md shadow-sm"></div>
@@ -152,8 +153,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
                     <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-red-500/90 shadow-[0_0_15px_rgba(239,68,68,0.9)] animate-pulse transform -translate-y-1/2"></div>
                  </div>
 
-                <div className="absolute text-white/80 text-xs font-medium bottom-8 bg-black/60 px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
-                  Point camera at barcode
+                <div className="absolute text-white/80 text-xs font-medium bottom-8 bg-black/60 px-4 py-2 rounded-full backdrop-blur-md border border-white/10 flex items-center gap-2">
+                  <QrCode size={14} />
+                  Point camera at barcode or QR code
                 </div>
               </div>
             </>
