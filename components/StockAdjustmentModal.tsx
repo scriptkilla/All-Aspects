@@ -59,7 +59,8 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     onClose();
   };
 
-  const totalNewQuantity = Object.values(adjustments).reduce((sum, q) => sum + (q || 0), 0);
+  // Fix: Explicitly type 'sum' and 'q' as numbers to avoid 'unknown' type errors in strict TypeScript environments
+  const totalNewQuantity = Object.values(adjustments).reduce((sum: number, q: number) => sum + (q || 0), 0);
   const totalCurrentQuantity = getTotalQuantity(item);
   const diff = totalNewQuantity - totalCurrentQuantity;
 
