@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, QrCode, Zap, ZapOff, Scan } from 'lucide-react';
+import { X, AlertCircle, Zap, ZapOff, Scan, Barcode } from 'lucide-react';
 
 // Declare global variable for the external library loaded in index.html
 declare const Html5Qrcode: any;
@@ -32,7 +32,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
       setHasTorch(false);
       setTorchOn(false);
       
-      // Give the DOM a moment to render the #reader div
       const timer = setTimeout(() => {
         startScanner();
       }, 300);
@@ -48,7 +47,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
         throw new Error("Scanner engine not found. Please refresh.");
       }
 
-      // Cleanup any existing instance
       if (scannerRef.current) {
         try { await scannerRef.current.stop(); } catch(e) {}
       }
@@ -56,8 +54,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
       scannerRef.current = new Html5Qrcode("reader");
 
       const config = {
-        fps: 20,
-        qrbox: { width: 250, height: 250 },
+        fps: 25,
+        // Adjusted qrbox to be a wider rectangle, better suited for standard barcodes
+        qrbox: { width: 280, height: 160 },
         aspectRatio: 1.0,
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
@@ -79,7 +78,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
       if (mountedRef.current) {
         setIsInitialized(true);
         
-        // Check for flashlight support after the camera is active
         setTimeout(async () => {
           if (!mountedRef.current || !scannerRef.current) return;
           try {
@@ -141,9 +139,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
         <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-center z-50 bg-gradient-to-b from-black/90 to-transparent">
           <div className="flex items-center gap-3">
             <div className="bg-brand-accent p-2 rounded-xl text-brand-blue shadow-lg">
-               <Scan size={20} strokeWidth={3} />
+               <Barcode size={22} strokeWidth={2.5} />
             </div>
-            <h3 className="text-white font-black text-xl tracking-tight uppercase">Scanner</h3>
+            <h3 className="text-white font-black text-xl tracking-tight uppercase">Barcode Scanner</h3>
           </div>
           
           <button 
@@ -164,29 +162,29 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
              <div className="absolute inset-0 flex items-center justify-center z-20 bg-slate-950">
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-16 h-16 border-4 border-slate-800 border-t-brand-accent rounded-full animate-spin"></div>
-                  <p className="text-sm font-bold text-slate-500 tracking-widest uppercase animate-pulse">Initializing...</p>
+                  <p className="text-sm font-bold text-slate-500 tracking-widest uppercase animate-pulse">Engaging Camera...</p>
                 </div>
              </div>
           )}
           
           {!error ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-               {/* Viewfinder Graphics */}
-               <div className="w-64 h-64 relative">
-                  <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-brand-accent rounded-tl-2xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
-                  <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-brand-accent rounded-tr-2xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
-                  <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-brand-accent rounded-bl-2xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
-                  <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-brand-accent rounded-br-2xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+               {/* Rectangular Viewfinder optimized for Barcodes */}
+               <div className="w-[280px] h-[160px] relative">
+                  <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-brand-accent rounded-tl-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+                  <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-brand-accent rounded-tr-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+                  <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-brand-accent rounded-bl-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+                  <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-brand-accent rounded-br-xl shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
                   
                   {/* Laser Scanner Animation */}
-                  <div className="absolute top-0 left-2 right-2 h-[3px] bg-brand-accent shadow-[0_0_20px_rgba(245,158,11,1)] animate-[scan_2s_ease-in-out_infinite]"></div>
+                  <div className="absolute top-0 left-2 right-2 h-[2px] bg-brand-accent shadow-[0_0_20px_rgba(245,158,11,1)] animate-[scan_1.5s_ease-in-out_infinite]"></div>
                </div>
 
-                <div className="absolute bottom-1/4 translate-y-20 flex flex-col items-center gap-4">
+                <div className="absolute bottom-1/4 translate-y-16 flex flex-col items-center gap-4">
                   <div className="bg-black/60 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 shadow-2xl">
-                    <QrCode size={18} className="text-brand-accent" />
+                    <Scan size={18} className="text-brand-accent" />
                     <span className="text-white text-[11px] font-black uppercase tracking-[0.2em]">
-                      QR & Barcodes
+                      Align Barcode in Frame
                     </span>
                   </div>
                 </div>
@@ -203,7 +201,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
                   onClick={onClose}
                   className="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black uppercase tracking-widest transition-all"
                 >
-                  Go Back
+                  Return
                 </button>
               </div>
             </div>
@@ -211,28 +209,28 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
 
           {/* FLASHLIGHT TOGGLE - BOTTOM LEFT CORNER */}
           {isInitialized && hasTorch && (
-             <div className="absolute bottom-8 left-8 z-50 pointer-events-auto">
+             <div className="absolute bottom-10 left-10 z-50 pointer-events-auto">
                <button 
                   onClick={toggleTorch} 
-                  className={`group p-5 rounded-full transition-all border-2 shadow-2xl flex items-center justify-center ${torchOn ? 'text-brand-accent bg-white/20 border-brand-accent' : 'text-white/70 bg-black/40 border-white/20'}`}
+                  className={`group p-6 rounded-full transition-all border-2 shadow-2xl flex items-center justify-center ${torchOn ? 'text-brand-accent bg-white/20 border-brand-accent' : 'text-white/70 bg-black/40 border-white/20'}`}
                >
                  {torchOn ? (
-                    <Zap size={28} fill="currentColor" className="animate-pulse" />
+                    <Zap size={32} fill="currentColor" className="animate-pulse" />
                  ) : (
-                    <ZapOff size={28} />
+                    <ZapOff size={32} />
                  )}
                  <span className="absolute left-full ml-4 whitespace-nowrap bg-black/60 px-3 py-1 rounded text-[10px] font-bold text-white uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                    {torchOn ? 'Light Off' : 'Light On'}
+                    Flashlight {torchOn ? 'Off' : 'On'}
                  </span>
                </button>
              </div>
           )}
         </div>
 
-        {/* Footer Bar */}
+        {/* Status Bar */}
         <div className="bg-slate-900 p-6 border-t border-white/5 flex items-center justify-center gap-4">
            <div className="w-2 h-2 rounded-full bg-brand-accent animate-ping"></div>
-           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Scanner Online</p>
+           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Precision Engine Active</p>
         </div>
 
       </div>

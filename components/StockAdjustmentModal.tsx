@@ -58,8 +58,9 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     onClose();
   };
 
-  // Explicitly typing reducer parameters to fix operator + error on number and unknown types
-  const totalNewQuantity = Object.values(adjustments).reduce((sum: number, q: number) => sum + (q || 0), 0);
+  // Fix: Explicitly type reduce as <number> to ensure totalNewQuantity is inferred as a number
+  // This resolves the "left-hand side of an arithmetic operation must be of type 'any', 'number'..." error on line 64.
+  const totalNewQuantity = Object.values(adjustments).reduce<number>((sum, q) => sum + (q || 0), 0);
   const totalCurrentQuantity = getTotalQuantity(item);
   const diff = totalNewQuantity - totalCurrentQuantity;
 
