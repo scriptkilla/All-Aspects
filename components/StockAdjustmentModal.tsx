@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, MapPin, ArrowUpCircle, ArrowDownCircle, Save } from 'lucide-react';
 import { InventoryItem, getTotalQuantity } from '../types';
@@ -59,8 +58,8 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     onClose();
   };
 
-  // Fix: Explicitly type 'sum' and 'q' as numbers to avoid 'unknown' type errors in strict TypeScript environments
-  const totalNewQuantity = Object.values(adjustments).reduce((sum: number, q: number) => sum + (q || 0), 0);
+  // Explicitly typing reduce as <number> to resolve "left-hand side of an arithmetic operation" error by ensuring result is a numeric type
+  const totalNewQuantity = Object.values(adjustments).reduce<number>((sum, q) => sum + (q || 0), 0);
   const totalCurrentQuantity = getTotalQuantity(item);
   const diff = totalNewQuantity - totalCurrentQuantity;
 

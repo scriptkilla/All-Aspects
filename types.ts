@@ -1,4 +1,5 @@
 
+
 export type Category = string;
 
 export type Location = string;
@@ -92,7 +93,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ]
 };
 
-// Helper to get total quantity from an item
+// Helper to get total quantity from an item - Explicitly typing reduce as <number>
 export const getTotalQuantity = (item: InventoryItem): number => {
-  return Object.values(item.quantities).reduce((sum, qty) => sum + qty, 0);
+  return Object.values(item.quantities).reduce<number>((sum, qty) => sum + qty, 0);
 };

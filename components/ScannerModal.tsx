@@ -1,5 +1,6 @@
+
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, QrCode, Zap, ZapOff } from 'lucide-react';
+import { X, Camera, AlertCircle, QrCode, Zap, ZapOff, Scan } from 'lucide-react';
 
 // Declare global variable for the external library loaded in index.html
 declare const Html5Qrcode: any;
@@ -25,7 +26,6 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
   }, []);
 
   useEffect(() => {
-    // Reset state when opening
     if (isOpen) {
       setError('');
       setIsInitialized(false);
@@ -44,26 +44,30 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
   const startScanner = async () => {
     try {
       // Small delay to ensure the DOM element "reader" is ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       if (typeof Html5Qrcode === 'undefined') {
-        throw new Error("Scanner library not loaded. Check internet connection.");
+        throw new Error("Scanner library not loaded. Check your connection.");
       }
 
-      // Initialize if not already done
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode("reader");
       }
 
       const config = {
-        fps: 15, // Slightly higher for smoother UI
-        qrbox: { width: 250, height: 250 },
+        fps: 20, // High FPS for faster detection
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const size = Math.floor(minEdge * 0.7); // 70% of screen width
+          return { width: size, height: size };
+        },
         aspectRatio: 1.0,
         experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
+          useBarCodeDetectorIfSupported: true
         }
       };
 
+      // By default, Html5Qrcode supports all formats including QR_CODE, EAN, CODE_128, etc.
       await scannerRef.current.start(
         { facingMode: "environment" },
         config,
@@ -73,16 +77,16 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
             onClose();
           }
         },
-        (errorMessage: string) => {
-          // Frame-by-frame errors are ignored as they occur when no code is visible
+        () => {
+          // Continuous scanning...
         }
       );
       
       if (mountedRef.current) {
         setIsInitialized(true);
         
-        // Attempt to detect torch capability after start
-        // Using a short delay as capabilities might not be immediately available
+        // Detection for Torch (Flashlight) capability
+        // Note: Needs a moment for the camera track to stabilize
         setTimeout(async () => {
           if (!mountedRef.current || !scannerRef.current) return;
           try {
@@ -91,17 +95,17 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
               setHasTorch(true);
             }
           } catch (e) {
-            console.warn("Could not check camera capabilities:", e);
+            console.warn("Torch capability check skipped:", e);
           }
-        }, 500);
+        }, 1000);
       }
 
     } catch (err: any) {
       console.error("Scanner error:", err);
       if (mountedRef.current) {
-        let msg = "Could not access camera.";
-        if (err?.name === "NotAllowedError") msg = "Camera permission denied. Please allow access in settings.";
-        if (err?.name === "NotFoundError") msg = "No camera found on this device.";
+        let msg = "Camera access error.";
+        if (err?.name === "NotAllowedError") msg = "Permission denied. Enable camera in settings.";
+        if (err?.name === "NotFoundError") msg = "Camera not found on this device.";
         setError(msg);
       }
     }
@@ -131,118 +135,110 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
       });
       setTorchOn(newStatus);
     } catch (e) {
-      console.error("Failed to toggle torch:", e);
-      // If applying constraints fails, hide the button as it might not be truly supported
-      setHasTorch(false);
+      console.error("Torch toggle failed:", e);
+      setHasTorch(false); // Disable if it fails
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="relative w-full h-full sm:h-auto sm:max-w-md bg-black sm:rounded-2xl overflow-hidden shadow-2xl border-none sm:border sm:border-slate-800 flex flex-col">
+    <div className="fixed inset-0 bg-black z-[60] flex items-center justify-center animate-in fade-in duration-200">
+      <div className="relative w-full h-full flex flex-col">
         
         {/* Header Overlay */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-30 bg-gradient-to-b from-black/80 to-transparent">
-          <div className="flex items-center gap-2">
-            <div className="bg-brand-accent p-1.5 rounded-lg text-brand-blue">
-               <Camera size={18} strokeWidth={2.5} />
+        <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-30 bg-gradient-to-b from-black/90 via-black/40 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="bg-brand-accent p-2 rounded-xl text-brand-blue shadow-lg">
+               <Scan size={20} strokeWidth={2.5} />
             </div>
-            <h3 className="text-white font-bold tracking-tight">Scanner</h3>
+            <h3 className="text-white font-bold text-lg tracking-tight">Universal Scanner</h3>
           </div>
           
-          <div className="flex items-center gap-2">
-             {/* Flashlight Toggle - Only shows if hardware supports it */}
+          <div className="flex items-center gap-3">
              {hasTorch && (
                <button 
                   onClick={toggleTorch} 
-                  className={`p-2.5 rounded-full transition-all border ${torchOn ? 'text-brand-accent bg-white/20 border-brand-accent shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border-transparent'}`}
-                  title={torchOn ? "Turn Flashlight Off" : "Turn Flashlight On"}
+                  className={`p-3 rounded-full transition-all border-2 ${torchOn ? 'text-brand-accent bg-white/20 border-brand-accent shadow-[0_0_15px_rgba(245,158,11,0.6)]' : 'text-white/80 hover:text-white bg-white/10 border-white/20'}`}
+                  title="Toggle Flashlight"
                >
-                 {torchOn ? <Zap size={20} fill="currentColor" /> : <ZapOff size={20} />}
+                 {torchOn ? <Zap size={22} fill="currentColor" /> : <ZapOff size={22} />}
                </button>
              )}
              
-             <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-all border border-transparent">
-               <X size={20} />
+             <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all border-2 border-white/20">
+               <X size={22} />
              </button>
           </div>
         </div>
 
-        {/* Camera Viewport */}
-        <div className="relative flex-1 sm:aspect-[3/4] bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
-          
-          {/* Scanner Container - The library injects the video here */}
+        {/* Viewport */}
+        <div className="flex-1 bg-slate-950 flex flex-col items-center justify-center overflow-hidden">
           <div id="reader" className="w-full h-full absolute inset-0 [&_video]:object-cover [&_video]:w-full [&_video]:h-full"></div>
 
-          {/* Loading State Overlay */}
           {!error && !isInitialized && (
              <div className="absolute inset-0 flex items-center justify-center z-20 bg-slate-950">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 border-4 border-slate-800 border-t-brand-accent rounded-full animate-spin"></div>
-                  <p className="text-sm font-medium text-slate-400">Waking up camera...</p>
+                  <div className="w-14 h-14 border-4 border-slate-800 border-t-brand-accent rounded-full animate-spin"></div>
+                  <p className="text-sm font-medium text-slate-400 animate-pulse">Initializing Camera...</p>
                 </div>
              </div>
           )}
           
           {!error ? (
-            <>
-              {/* Visual Overlay (HUD) */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-                 {/* Target Frame */}
-                 <div className="w-64 h-64 relative">
-                    {/* Corners */}
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-[4px] border-l-[4px] border-brand-accent rounded-tl-xl shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-[4px] border-r-[4px] border-brand-accent rounded-tr-xl shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[4px] border-l-[4px] border-brand-accent rounded-bl-xl shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[4px] border-r-[4px] border-brand-accent rounded-br-xl shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
-                    
-                    {/* Scanning Laser Animation */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-brand-accent/60 shadow-[0_0_20px_rgba(245,158,11,0.8)] animate-[scan_2s_linear_infinite]"></div>
-                 </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+               {/* Viewfinder Graphics */}
+               <div className="w-72 h-72 relative">
+                  <div className="absolute top-0 left-0 w-12 h-12 border-t-[4px] border-l-[4px] border-brand-accent rounded-tl-2xl"></div>
+                  <div className="absolute top-0 right-0 w-12 h-12 border-t-[4px] border-r-[4px] border-brand-accent rounded-tr-2xl"></div>
+                  <div className="absolute bottom-0 left-0 w-12 h-12 border-b-[4px] border-l-[4px] border-brand-accent rounded-bl-2xl"></div>
+                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[4px] border-r-[4px] border-brand-accent rounded-br-2xl"></div>
+                  
+                  {/* Laser effect */}
+                  <div className="absolute top-0 left-2 right-2 h-[2px] bg-brand-accent/50 shadow-[0_0_15px_rgba(245,158,11,1)] animate-[scan_2.5s_ease-in-out_infinite]"></div>
+               </div>
 
-                {/* Status Bar */}
-                <div className="absolute bottom-12 flex flex-col items-center gap-2">
-                  <div className="text-white text-[11px] font-bold uppercase tracking-[0.2em] bg-black/60 px-5 py-2.5 rounded-full backdrop-blur-lg border border-white/10 flex items-center gap-3">
-                    <QrCode size={16} className="text-brand-accent" />
-                    Align code in frame
+                <div className="absolute bottom-16 flex flex-col items-center gap-4 px-6 w-full max-w-xs">
+                  <div className="bg-black/70 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
+                    <QrCode size={20} className="text-brand-accent" />
+                    <span className="text-white text-xs font-bold uppercase tracking-widest text-center">
+                      Scan QR or Barcode
+                    </span>
                   </div>
                 </div>
-              </div>
-            </>
+            </div>
           ) : (
-            /* Error View */
-            <div className="absolute inset-0 flex items-center justify-center z-40 bg-slate-900/95 backdrop-blur-md">
-              <div className="text-center p-8 max-w-[280px]">
-                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle size={32} className="text-red-500" />
+            <div className="absolute inset-0 flex items-center justify-center z-40 bg-slate-950/95 backdrop-blur-md p-8">
+              <div className="text-center max-w-xs">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle size={40} className="text-red-500" />
                 </div>
-                <h4 className="text-white font-bold mb-2">Camera Unavailable</h4>
-                <p className="text-xs text-slate-400 leading-relaxed mb-6">{error}</p>
+                <h4 className="text-white text-xl font-bold mb-3">Camera Error</h4>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8">{error}</p>
                 <button 
                   onClick={onClose}
-                  className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-all"
+                  className="w-full py-4 bg-brand-accent text-brand-blue rounded-2xl font-bold transition-transform active:scale-95"
                 >
-                  Go Back
+                  Return to Inventory
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer info (Mobile only) */}
-        <div className="sm:hidden p-4 bg-slate-900 border-t border-slate-800 text-center">
-           <p className="text-[10px] text-slate-500 uppercase tracking-widest">Scanner active • Ready to scan</p>
+        {/* Instructions Footer */}
+        <div className="bg-slate-900/80 backdrop-blur-md p-6 pb-10 border-t border-white/5 text-center flex items-center justify-center gap-3">
+           <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></div>
+           <p className="text-[11px] text-slate-300 font-bold uppercase tracking-[0.2em]">Ready to scan item...</p>
         </div>
 
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes scan {
-          0% { top: 0; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
+          0% { top: 0%; opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
           100% { top: 100%; opacity: 0; }
         }
       `}} />
