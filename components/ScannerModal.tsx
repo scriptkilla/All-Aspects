@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, AlertCircle, QrCode } from 'lucide-react';
+import { X, Camera, AlertCircle, QrCode, Zap, ZapOff } from 'lucide-react';
 
 // Declare global variable for the external library loaded in index.html
 declare const Html5Qrcode: any;
@@ -14,6 +14,9 @@ interface ScannerModalProps {
 export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onScan }) => {
   const [error, setError] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(false);
 
@@ -27,6 +30,8 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
     if (isOpen) {
       setError('');
       setIsInitialized(false);
+      setHasTorch(false);
+      setTorchOn(false);
       startScanner();
     } else {
       stopScanner();
@@ -53,7 +58,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
 
       const config = {
         fps: 10,
-        qrbox: { width: 250, height: 250 }, // Square scanning zone to support both QR and Barcodes
+        qrbox: { width: 250, height: 250 }, // Square scanning zone
         aspectRatio: 1.0,
         experimentalFeatures: {
             useBarCodeDetectorIfSupported: true
@@ -77,6 +82,16 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
       
       if (mountedRef.current) {
         setIsInitialized(true);
+        
+        // Check for torch capability
+        try {
+          const capabilities = scannerRef.current.getRunningTrackCameraCapabilities();
+          if (capabilities && 'torch' in capabilities) {
+            setHasTorch(true);
+          }
+        } catch (e) {
+          console.warn("Could not check camera capabilities", e);
+        }
       }
 
     } catch (err: any) {
@@ -104,6 +119,21 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
     }
   };
 
+  const toggleTorch = async () => {
+    if (!scannerRef.current || !hasTorch) return;
+    
+    try {
+      const newStatus = !torchOn;
+      await scannerRef.current.applyVideoConstraints({
+        advanced: [{ torch: newStatus }]
+      });
+      setTorchOn(newStatus);
+    } catch (e) {
+      console.error("Failed to toggle torch", e);
+      setHasTorch(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -116,9 +146,20 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ isOpen, onClose, onS
             <Camera size={20} className="text-brand-accent" />
             Scan Code
           </h3>
-          <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+             {hasTorch && (
+               <button 
+                  onClick={toggleTorch} 
+                  className={`p-2 rounded-full transition-all ${torchOn ? 'text-brand-accent bg-white/20' : 'text-white/80 hover:text-white bg-white/10 hover:bg-white/20'}`}
+                  title="Toggle Flashlight"
+               >
+                 {torchOn ? <Zap size={20} className="fill-current" /> : <ZapOff size={20} />}
+               </button>
+             )}
+             <button onClick={onClose} className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all">
+               <X size={20} />
+             </button>
+          </div>
         </div>
 
         {/* Camera Viewport */}

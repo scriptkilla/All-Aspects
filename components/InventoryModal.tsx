@@ -101,7 +101,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     onClose();
   };
 
-  const totalQuantity = Object.values(stockMap).reduce((sum, q) => sum + q, 0);
+  const totalQuantity = Object.values(stockMap).reduce((sum: number, q: number) => sum + q, 0);
 
   // Filter locations that are not yet added to the item
   const unusedLocations = availableLocations.filter(l => stockMap[l] === undefined);

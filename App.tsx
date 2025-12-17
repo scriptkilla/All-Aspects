@@ -597,7 +597,7 @@ export default function App() {
             filteredInventory.map(item => {
               const totalQty = getTotalQuantity(item);
               const isLowStock = totalQty <= item.minStock;
-              const locations = Object.entries(item.quantities).filter(([_, q]) => q > 0);
+              const locations = (Object.entries(item.quantities) as [string, number][]).filter(([_, q]) => q > 0);
               
               return (
                 <div key={item.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
@@ -712,7 +712,7 @@ export default function App() {
                   filteredInventory.map(item => {
                     const totalQty = getTotalQuantity(item);
                     const isLowStock = totalQty <= item.minStock;
-                    const activeLocations = Object.entries(item.quantities).filter(([_, q]) => q > 0);
+                    const activeLocations = (Object.entries(item.quantities) as [string, number][]).filter(([_, q]) => q > 0);
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
